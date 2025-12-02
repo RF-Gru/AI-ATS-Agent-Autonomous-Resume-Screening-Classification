@@ -1,0 +1,537 @@
+{
+  "name": "ATS Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Please upload your CV",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "CV",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": "pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldType": "number",
+              "placeholder": "+00 0000000"
+            },
+            {
+              "fieldLabel": "Full Name",
+              "placeholder": "Anne Smith",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "37adcbaa-0040-4817-a617-ca82165ca2e9",
+      "name": "On form submission",
+      "webhookId": "7380338d-b7cd-4a98-9643-84bfbe327e1b"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "CV",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "5ff0dbb1-1408-425d-82b5-e046f1ccb74d",
+      "name": "Extract CV Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=This is my CV: \"{{ $json.text }}\"",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a senior technical recruiter at Amazon.\n\nEvaluate the following CV for the role: Data Analyst. \n\nThis role focuses on analyzing large-scale datasets to drive business insights, improve operational efficiency, and support decision-making across all teams. \n\nEvaluate the CV across two layers using a score system from 0 to 10 per item.\n\nLayer 1: Role-Specific Match\n(Total: 50 points)\nEvaluate the CV against these must-have qualifications. Give each a score form 0 to 10\n\nStrong SQL \n\nExperience with data visualization (e.g. Tableau, Power BI, Quicksight)\n\nProficiency in Python or R for data analysis\nBackground in statistical analysis and A/B testing\n\nExperience working with large-scale data in cloud environments (e.g AWS, GCP)\n\nLayer 2: Strategic Cultural Fit\n(Total: 50 points)\nThese are optional, but strong factors. Again, score each from 0 to 10.\n\nBias for action\n\nClear and concise communication\n\nAbility to work in ambiguous or fast-paced environments\n\nOwnership and accountability\n\nCustomer-centric mindset\n\nIf the combined score is above 75, return:\n\nDecision: Proceed\nJustification: Why they passed\n\nIf below:\nDecision: Reject\nJustification: What they lacked\n\nAlways return a structured JSON like:\n\n{\n   \"name\": \"Candidate Name\",\n   \"summary\": \"Short summary of evaluation\",\n   \"score_layer1\": 25,\n   \"score_layer2\": 35,\n   \"decision\": \"Proceed\",\n   \"justification\": \"They meet the majority of qualifications and show good cultural alignment.\"\n\n \n\n\n\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        -32
+      ],
+      "id": "cfb304dd-007b-4503-a93c-45b0f6e5923a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        176
+      ],
+      "id": "b77765c6-cb33-4fc9-beca-9cbcd56bdfd5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "abEVVINXZdfCsI20",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n   \"name\": \"Anne Smith\",\n   \"summary\": \"The candidate holds 5 years of management experience. They demonstrate strong leadership capabilities, but lack experience in A/B testing.\",\n   \"score_layer1\": 25,\n   \"score_layer2\": 35,\n   \"decision\": \"Proceed\",\n   \"justification\": \"They meet the majority of qualifications and show good cultural alignment. They already have previous background in sales and accounts which the role needs.\"\n\n\n\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        176
+      ],
+      "id": "207a1ad6-0d26-4ff5-ae6b-1db21c937ea4",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.output.decision }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Accept",
+              "description": "If the decision is \"Proceed\" "
+            },
+            {
+              "category": "Reject",
+              "description": "If the decision is \"Reject\" "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "b1e20cee-3056-4c8e-b283-e07b915355fb",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        176
+      ],
+      "id": "a87b1879-8cdc-4eba-81bf-941f6a289faf",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "abEVVINXZdfCsI20",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE",
+          "mode": "list",
+          "cachedResultName": "CVs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Accepted",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.output.name }}",
+            "Summary": "={{ $json.output.summary }}",
+            "Score Layer 1": "={{ $json.output.score_layer1 }}",
+            "Score Layer 2": "={{ $json.output.score_layer2 }}",
+            "Decision": "={{ $json.output.decision }}",
+            "Justification": "={{ $json.output.justification }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Score Layer 1",
+              "displayName": "Score Layer 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Score Layer 2",
+              "displayName": "Score Layer 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Decision",
+              "displayName": "Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Justification",
+              "displayName": "Justification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        -128
+      ],
+      "id": "d2821d71-8ded-4a72-8f14-a88ec3910f56",
+      "name": "Accepted",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AE2n7R2EuANZOOVa",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE",
+          "mode": "list",
+          "cachedResultName": "CVs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1642425628,
+          "mode": "list",
+          "cachedResultName": "Rejected",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAglr9-BIEucXTHwhoqc6yYMHrILMp4TN7uNv249YrE/edit#gid=1642425628"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.output.name }}",
+            "Summary": "={{ $json.output.summary }}",
+            "Score Layer 1": "={{ $json.output.score_layer1 }}",
+            "Score Layer 2": "={{ $json.output.score_layer2 }}",
+            "Decision": "={{ $json.output.decision }}",
+            "Justification": "={{ $json.output.justification }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Score Layer 1",
+              "displayName": "Score Layer 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Score Layer 2",
+              "displayName": "Score Layer 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Decision",
+              "displayName": "Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Justification",
+              "displayName": "Justification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        64
+      ],
+      "id": "231048e1-2b5d-44dc-836a-7c6c197a7643",
+      "name": "Rejected",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AE2n7R2EuANZOOVa",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1056,
+        -128
+      ],
+      "id": "02a8fa52-f17c-4074-a8cc-97045ea019b7",
+      "name": "Send a message",
+      "webhookId": "a985f407-8f9f-4731-80ba-3e9cc1ea8c3e"
+    }
+  ],
+  "pinData": {
+    "Extract CV Data": [
+      {
+        "json": {
+          "numpages": 1,
+          "numrender": 1,
+          "info": {
+            "PDFFormatVersion": "1.3",
+            "Language": null,
+            "EncryptFilterName": null,
+            "IsLinearized": false,
+            "IsAcroFormPresent": false,
+            "IsXFAPresent": false,
+            "IsCollectionPresent": false,
+            "IsSignaturesPresent": false,
+            "Title": "CV_Rosula_Gruber_2025.docx",
+            "Producer": "macOS Version 12.7.6 (Build 21H1320) Quartz PDFContext",
+            "CreationDate": "D:20251029085410Z00'00'",
+            "ModDate": "D:20251029085410Z00'00'"
+          },
+          "text": "ROSULA FAITH GRUBER\nTel: +4917644473790 Email: rosulag@gmail.com\nLinkedIn: https://www.linkedin.com/in/rfgruber/\nPROFESSIONAL EXPERIENCE\nTELUS & APPEN, Remote\nData Quality & Search Evaluation Analyst 2016 - Present\n● Analyzed and validated large-scale datasets (500K+ records) derived from SQL-based data pipelines and proprietary evaluation\nplatforms, assessing accuracy, relevance, and data integrity. Processed and labeled 1,000+ data points weekly with 95%+ accuracy,\ncontributing to the creation of high-quality training datasets for AI and machine learning model development in search and ad\nrelevance optimization.\n● Identified and analyzed data trends and quality patterns through large-scale online analysis, providing actionable insights that\nimproved data collection frameworks and model training standards.\n711 MEDIA, Stuttgart, Germany\nContent QA (Part-time) Nov 2018 - Feb 2019\n● Performed detailed SEO audits and content validation using Excel-based templates to review metadata, keyword alignment, and\ninternal linking, strengthening organic visibility and search performance.\n● Collaborated with developers and content teams to implement fixes that enhanced both user experience, content accuracy, and\norganic search rankings.\neBAY PHILIPPINES, Manila, Philippines\nAdvertising Sales Manager 2010 - 2011\n● Managed client accounts and analyzed advertising data to recommend campaign strategies aligned with key performance indicators.\n● Contributed to an estimated 10-12% increase in ROI across key accounts through refined targeting and budget optimization.\n● Developed Excel-based dashboards and reports to analyze, visualize, and present data trends (CTR, CPM, ROI). Generated data\ninsights that guided optimization strategies and improved campaign performance.\n● Monitored market trends and consumer behavior to refine targeting and messaging strategies for e-commerce clients.\nNETBOOSTER ASIA, Manila, Philippines\nAccount Manager 2009 - 2010\n● Coordinated cross-functional teams to execute digital campaigns, ensuring accurate tracking and timely delivery. Maintained a 98%\non-time delivery rate and ensured alignment with client KPIs. .\n● Analyzed and interpreted advertising performance data using Excel-based tools to highlight performance drivers and optimization\nopportunities.\n● Strengthened client relationships through transparent reporting and proactive communication.\nHAVOC DIGITAL, Manila, Philippines 2007 - 2009\nAccount & Sales Manager\n● Led the successful pitch that secured the Samsung account, generating significant revenue growth and establishing a long-term\npartnership.\n● Built an internal ad cost-estimation model in Excel by analyzing historical estimates and pricing patterns (CPM tiers, minimum\nspend, bundled placements); validated outputs with Yahoo—estimates required no major revision—and reduced proposal\nturnaround from 48–72 hours to same-day delivery.\n● Developed ROI comparison dashboards (CTR, CPM, CPA/ROI) to evaluate new ad platforms versus established channels in Excel\nto evaluate ad platforms, resulting in an approximate 15% budget shift toward higher-performing channels.\n● Implemented a Work‑In‑Progress (WIP) tracker to centralize project status and proactively communicate updates, which improved\nproject visibility and significantly reduced after-hours client contacts.\nEDUCATION\nUniversity of the Philippines Open University - A.S. Information Technology\nUniversity of the Philippines Diliman, Manila, PH - Library and Information Science\nADDITIONAL INFORMATION\nTechnical Skills: SQL • MySQL • Excel (PivotTables, Power Query) • Python (data cleaning & analysis) • Tableau • Data Visualization •\nSEO Analysis • Google Analytics • Jupyter Notebooks • Workflow Automation (n8n) • Data Quality Assurance\nSoft Skills: Stakeholder Management • Team Collaboration • Analytical Thinking • Problem-Solving • Project Management • Communication\n(written & verbal) • Time Management • Attention to Detail • Adaptability • Proactivity\nLanguages: English (Native), German (Conversational), Filipino (Fluent)\nInterests: Ultimate Frisbee, Climbing, Traveling, Cybersecurity\nCertifications: Certified in Cybersecurity (ISC²); Google Cybersecurity Professional Certificate",
+          "version": "5.3.31"
+        },
+        "binary": {}
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract CV Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CV Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accepted": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "20c56bea-6813-4555-82d3-aa6812b6a844",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f64ef1faea1c4ee49ab8756d51977140f4f0663f760702995dd208ac41774fb"
+  },
+  "id": "DiEEWKKUR6wrZXVZ",
+  "tags": []
+}
